@@ -31,9 +31,6 @@ public class FastsparkApplication {
 				"Hacking for Dummies"
 		};
 
-
-
-
 		SpringApplication.run(FastsparkApplication.class, args);
 	}
 
