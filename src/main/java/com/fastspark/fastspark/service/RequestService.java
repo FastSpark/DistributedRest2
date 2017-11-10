@@ -1,17 +1,17 @@
 package com.fastspark.fastspark.service;
 
 import com.fastspark.fastspark.model.Client;
+import com.sun.istack.internal.logging.Logger;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import sun.misc.Cleaner;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
+import java.net.*;
 import java.util.*;
+import java.util.logging.Level;
 
 /**
  * Created by nuwantha on 11/10/17.
@@ -47,130 +47,104 @@ public class RequestService {
 //        return 0;
 //    }
 //
-//    public Map<String, String> registerNode(String ip,String port,Map<String, String> message) {
-//        Map<String, String> result = new HashMap<>();
-//        DatagramSocket receiveSock = null;
-//        try{
-////            receiveSock = new DatagramSocket(Integer.parseInt(Global.nodePort)+2);
-//            receiveSock.setSoTimeout(10000);
-//            byte[] buffer = new byte[65536];
-//            DatagramPacket incoming = new DatagramPacket(buffer, buffer.length);
-//            String init_request = "REG " + ip + " " + port + " " + message.get("user");
-//            int length = init_request.length() + 5;
-//            init_request = String.format("%04d", length) + " " + init_request;
-////            DatagramPacket regrequest = new DatagramPacket(init_request.getBytes(), init_request.getBytes().length, InetAddress.getByName(Global.bootstrapServerIp), Global.bootstrapServerPort);
-////            receiveSock.send(regrequest);
-//            receiveSock.receive(incoming);
-//            receiveSock.close();
-//            byte[] data = incoming.getData();
-//            String s = new String(data, 0, incoming.getLength());
-//            System.out.println(s);
-//            String[] values = s.split(" ");
-//            String command = values[1];
-//            if(command.equals("REGOK")){
-//                int noOfNodes = Integer.parseInt(values[2]);
-//                if(noOfNodes == 0){
-//                    result.put("success", "true");
-//                    result.put("result", "Node Successfully registered");
-//                }
-//                else if(noOfNodes == 9999) {
-//                    result.put("success", "false");
-//                    result.put("result", "There is some error in the command");
-//                }
-//                else if(noOfNodes == 9998) {
-//                    result.put("success", "false");
-//                    result.put("result", "Already registered you, unregister first");
-//                }
-//                else if(noOfNodes == 9997) {
-//                    result.put("success", "false");
-//                    result.put("result", "Registered to another user, try a different IP and port");
-//                }
-//                else if(noOfNodes == 9996) {
-//                    result.put("success", "false");
-//                    result.put("result", "Can’t register, BS full");
-//                }
-//                else if(noOfNodes==1) {
-//                    String neighbourIp = values[3];
-//                    String neighbourPort = values[4];
-//                    String uri="http://"+neighbourIp+":"+neighbourPort+"/join";
-//                    RestTemplate restTemplate = new RestTemplate();
-//                    Map<String,String> node=new HashMap<>();
-////                    node.put("ip", Global.nodeIp);
-////                    node.put("port", Global.nodePort);
-//                    HttpHeaders headers = new HttpHeaders();
-//                    headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
-//
-//                    HttpEntity<Map> entity = new HttpEntity<Map>(node,headers);
-//                    int answer = restTemplate.postForObject(uri, entity, Integer.class);
-//
-//                    node.put("ip", neighbourIp);
-//                    node.put("port", neighbourPort);
-//                    if(answer==0) {
-////                        Global.neighborTable.add(node);
-//                    }
-//                    System.out.println("Neighbour value "+node.get("ip")+" "+node.get("port"));
-//                    result.put("success", "true");
-//                    result.put("result", "Node Successfully registered");
-//                }
-//                else {
-//                    String neighbourIp = values[3];
-//                    String neighbourPort = values[4];
-//                    String uri="http://"+neighbourIp+":"+neighbourPort+"/join";
-//                    RestTemplate restTemplate = new RestTemplate();
-//                    Map<String,String> node=new HashMap<>();
-////                    node.put("ip", Global.nodeIp);
-////                    node.put("port", Global.nodePort);
-//                    HttpHeaders headers = new HttpHeaders();
-//                    headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
-//
-//                    HttpEntity<Map> entity = new HttpEntity<Map>(node,headers);
-//                    int answer = restTemplate.postForObject(uri, entity, Integer.class);
-//
-//                    Map<String, String> neighbour = new HashMap<String,String>();
-//
-//                    if(answer==0) {
-//                        neighbour.put("ip", neighbourIp);
-//                        neighbour.put("port", neighbourPort);
-////                        Global.neighborTable.add(neighbour);
-//                    }
-//                    System.out.println("My value "+node.get("ip")+" "+node.get("port"));
-//
-//                    neighbourIp = values[5];
-//                    neighbourPort = values[6];
-//                    uri="http://"+neighbourIp+":"+neighbourPort+"/join";
-//
-//                    answer = restTemplate.postForObject(uri, entity, Integer.class);
-//
-//                    if(answer==0) {
-//                        Map<String, String> neighbour2 = new HashMap<String,String>();
-//                        neighbour2.put("ip", neighbourIp);
-//                        neighbour2.put("port", neighbourPort);
-////                        Global.neighborTable.add(neighbour2);
-//                    }
-//                    System.out.println("My value "+node.get("ip")+" "+node.get("port"));
-//                    result.put("success", "true");
-//                    result.put("result", "Node Successfully registered");;
-//
-//                }
-//
-//            }
-//
-//
-//        }
-//        catch (SocketException e) {
-//            e.printStackTrace();
-//            receiveSock.close();
-//            result.put("success", "false");
-//            result.put("result", e.toString());
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//            receiveSock.close();
-//            result.put("success", "false");
-//            result.put("result", e.toString());
-//        }
-//        return result;
-//    }
-//
+    public Map<String, String> registerNode() {
+        Map<String, String> result = new HashMap<>();
+        DatagramSocket receiveSock = null;
+        String username=Client.getIp()+":"+Client.getPort();
+        String msg = " REG " + Client.getIp() + " " + Client.getPort() + " " + username;
+        msg = "00" + Integer.toString(msg.length()) + msg;
+
+        try {
+            receiveSock = new DatagramSocket(Client.getPort()-1);
+            receiveSock.setSoTimeout(10000);
+            byte[] buffer = new byte[65536];
+            DatagramPacket incoming = new DatagramPacket(buffer, buffer.length);
+
+            DatagramPacket datagramPacket = new DatagramPacket(msg.getBytes(), msg.getBytes().length, InetAddress.getByName(Client.getIp()), 55555);
+            receiveSock.send(datagramPacket);
+            receiveSock.receive(incoming);
+            receiveSock.close();
+            String receivedMessage = new String(incoming.getData(), 0, incoming.getLength());
+
+            String[] messagePart = receivedMessage.split(" ");
+            String command=messagePart[1];
+            if(command.equals("REGOK")) {
+                switch (messagePart[2]) {
+                    case "0":
+                        result.put("success", "true");
+                        result.put("result", "Node Successfully registered");
+                        System.out.println("You are the first node, registered successfully with BS!");
+                        Client.displayRoutingTable();
+                        Client.setStatus("1");
+                        break;
+                    case "1":
+                        result.put("success", "true");
+                        result.put("result", "Node Successfully registered case1");
+                        Client.storeNode(messagePart[3], messagePart[4]);
+                        Client.displayRoutingTable();
+                        Client.setStatus("1");
+                        break;
+                    case "2":
+                        result.put("success", "true");
+                        result.put("result", "Node Successfully registered case2");
+                        Client.storeNode(messagePart[3], messagePart[4]);
+                        Client.storeNode(messagePart[5], messagePart[6]);
+
+                        // complete bucketTable (including my own bucket if it's empty)
+
+                        for (int i = 0; i < Client.getK(); i++) {
+                            if (!Client.getBucketTable().containsKey(i)) {
+                                Client.findNodeFromBucket(i);
+                            }
+                        }
+                        // time out to complete receiving replies for findNodeFromBucket
+                        try {
+                            Thread.sleep(8000);  // Tune this
+
+                        } catch (InterruptedException ex) {
+                            try {
+                                Logger.getLogger(Class.forName(Client.class.getName())).log(Level.SEVERE, null, ex);
+                            } catch (ClassNotFoundException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                        break;
+                    case "9999":
+                        result.put("success", "false");
+                        result.put("result", "There is some error in the command");
+                        System.exit(0);
+                        break;
+                    case "9998":
+                        System.out.println("failed, already registered! attempting unregister first");
+                        result.put("success", "false");
+                        result.put("result", "Already registered you, unregister first");
+                        break;
+                    case "9997":
+                        result.put("success", "false");
+                        result.put("result", "Registered to another user, try a different IP and port");
+                        System.exit(0);
+                        // TODO
+                        break;
+                    case "9996":
+                        result.put("success", "false");
+                        result.put("result", "Can’t register, BS full");
+                        System.exit(0);
+                    default:
+                        break;
+                }
+
+            }
+        } catch (SocketException e) {
+            e.printStackTrace();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return result;
+
+    }
+
 //
 //    public ArrayList<String> search(Map<String, String> node){
 //        String query = node.get("file_name");
