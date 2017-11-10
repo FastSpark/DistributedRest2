@@ -53,12 +53,11 @@ public class RequestController {
         return "requset return";
     }
 
-    @RequestMapping(value = "/search", method = RequestMethod.GET)
-    public String getSearch(@RequestBody Map<String, String> message) {
-        System.out.println("/request is started");
-        Client.handleMessage(message.get("message"));
-        System.out.println(message.get("message"));
-        return "requset return";
+    @RequestMapping(value = "/search/{filename}", method = RequestMethod.GET)
+    public String searchQuery(@PathVariable("filename") String filename)  {
+        System.out.println(filename);
+        Client.searchFiles("SER "+" "+Client.getIp()+" "+Client.getPort()+" "+filename+"0");
+        return "sent";
     }
 
 

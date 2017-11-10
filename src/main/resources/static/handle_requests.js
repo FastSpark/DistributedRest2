@@ -2,6 +2,8 @@
  * Created by Buddhi on 11/10/2017.
  */
 
+//<![CDATA[
+
 var baseUrl = window.location.href;
 var tablUpdIntId;
 
@@ -10,17 +12,16 @@ document.getElementById("connect").addEventListener("click", function () {
 });
 
 document.getElementById("search").addEventListener("click", function () {
-    var file_name = document.getElementById("filesearchstring");
+    var file_name = document.getElementById("filesearchstring").value;
     // var sendString = "SEARCH_FILES " + file_name;
 
     $.ajax({
         contentType: 'application/json;charset=UTF-8',
         url: baseUrl + 'search/' + file_name,
         dataType: 'json',
-        type: 'POST',
+        type: 'GET',
         cache: false, // Force requested pages not to be cached by the browser
         processData: false, // Avoid making query string instead of JSON
-        data: JSON.stringify({})
     }).done(function (data) {
         console.log('AJAX call was successfully executed!' + data);
     }).fail(function (data) {
@@ -340,3 +341,5 @@ document.getElementById("search").addEventListener("click", function () {
 //
 //
 //
+
+//]]>
