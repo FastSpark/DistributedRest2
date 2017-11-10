@@ -27,14 +27,13 @@ import static javax.swing.text.html.FormSubmitEvent.MethodType.POST;
  * Created by nuwantha on 11/10/17.
  */
 
-@RestController
+@Controller
 public class RequestController {
     @Autowired
     RequestService requestService;
 
     @RequestMapping(value = "/", method = RequestMethod.GET)
     public String homePage(Model model) {
-        model.addAttribute("appName", "CSE");
         model.addAttribute("nodeIP", Client.getIp());
         model.addAttribute("nodePort", Client.getPort());
         model.addAttribute("files", Client.getFileDictionary());
@@ -51,7 +50,14 @@ public class RequestController {
         System.out.println("/request is started");
         Client.handleMessage(message.get("message"));
         System.out.println(message.get("message"));
+        return "requset return";
+    }
+
+    @RequestMapping(value = "/search", method = RequestMethod.GET)
+    public String getSearch(@RequestBody Map<String, String> message) {
+        System.out.println("/request is started");
         Client.handleMessage(message.get("message"));
+        System.out.println(message.get("message"));
         return "requset return";
     }
 
