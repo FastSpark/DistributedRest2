@@ -1,5 +1,7 @@
 package com.fastspark.fastspark;
 
+import java.io.IOException;
+import java.net.*;
 import java.util.*;
 
 import com.fastspark.fastspark.model.Client;
@@ -8,16 +10,13 @@ import javafx.application.Application;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
-
 @SpringBootApplication
 public class FastsparkApplication {
 
 	public static void main(String[] args) {
-	    int k=3;
-        SpringApplication application = new SpringApplication(FastsparkApplication.class);
-        final String[] fileList = {
+		int k = 3;
+		SpringApplication application = new SpringApplication(FastsparkApplication.class);
+		final String[] fileList = {
 				"Adventures of Tintin",
 				"Jack and Jill",
 				"Glee",
@@ -39,7 +38,13 @@ public class FastsparkApplication {
 				"American Idol",
 				"Hacking for Dummies"
 		};
+
+		//read bootrap server ip and node ip
+
+
 		String ip = null;
+
+
 		try {
 			ip = Inet4Address.getLocalHost().getHostAddress();
 		} catch (UnknownHostException e) {
@@ -50,10 +55,12 @@ public class FastsparkApplication {
 		System.out.print("Input Port : ");
 		String input = scanner.nextLine();
 		int port = Integer.parseInt(input);
+
 		Client.setPort(port);
 		Client.setIp(ip);
-        System.out.println(Client.getPort()+":"+Client.getIp());
-        Map<String, Object> map = new HashMap<>();
+		Client.setBootrapIp(ip);
+
+		Map<String, Object> map = new HashMap<>();
 		map.put("server.port", input);
 		application.setDefaultProperties(map);
 
@@ -83,10 +90,37 @@ public class FastsparkApplication {
 
 		Client.setMyFileList(myFileList);
 		Client.setFileDictionary(fileDictionary);
-        application.run(args);
-        Thread heartBeatHandeler = new Thread(new HeartBeatHandler());
-        heartBeatHandeler.start();
 
-    }
+		Map<String, String> result = new HashMap<>();
+		DatagramSocket receiveSock = null;
+		String username = ip + ":" + port;
+		String msg = " REG " + ip + " " + port + " " + username;
+		msg = "00" + Integer.toString(msg.length()) + msg;
 
+		try {
+			receiveSock = new DatagramSocket(Client.getPort() - 1);
+			receiveSock.setSoTimeout(10000);
+			byte[] buffer = new byte[65536];
+			DatagramPacket incoming = new DatagramPacket(buffer, buffer.length);
+			DatagramPacket datagramPacket = new DatagramPacket(msg.getBytes(), msg.getBytes().length, InetAddress.getByName(Client.getIp()), 55555);
+			receiveSock.send(datagramPacket);
+			receiveSock.receive(incoming);
+			receiveSock.close();
+			String receivedMessage = new String(incoming.getData(), 0, incoming.getLength());
+			application.run(args);
+			Client.handleRegisterResponse(receivedMessage);
+
+			Thread heartBeatHandeler = new Thread(new HeartBeatHandler());
+			heartBeatHandeler.start();
+
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (SocketException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+
+	}
 }

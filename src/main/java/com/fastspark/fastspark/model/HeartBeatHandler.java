@@ -11,21 +11,17 @@ public class HeartBeatHandler implements Runnable {
 
     @Override
     public void run() {
-        while (true){
-
-            try {
+        try {
+            while (true ){
                 sendHeartBeat();
-                Thread.sleep(100);
+                Thread.sleep(500);
                 Client.updateRountingTable();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
             }
-
-
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
     }
      public void sendHeartBeat() throws IOException {
         String message = "HEARTBEAT " + Client.getIp() + " " + Client.getPort();

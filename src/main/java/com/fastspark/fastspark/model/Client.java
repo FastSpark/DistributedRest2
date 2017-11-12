@@ -1,15 +1,16 @@
 package com.fastspark.fastspark.model;
 
+import com.sun.istack.internal.logging.Logger;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.client.RestTemplate;
 
 import javax.swing.*;
 import java.io.IOException;
-import java.net.DatagramSocket;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,9 +19,10 @@ import java.util.regex.Pattern;
  */
 public class Client {
 
+    private static String bootrapIp;
     private static int k=3;
     private static int myBucketId;
-    private static String status; //whether node is intializing or up
+    private static String status="0"; //whether node is intializing or up
     private static String ip;
     private static int port;
     private static String userName; //hash(ip+port)
@@ -29,9 +31,33 @@ public class Client {
     private static ArrayList<String> myFileList =new ArrayList<>(); //filenames with me
     private static ArrayList<Node> myNodeList =new ArrayList<>(); //nodes in my bucket
     private static Timestamp timestamp;
-    private static DatagramSocket datagramSocket;
     private static String currentSearch;
-    private static DefaultListModel<String> searchFilesResultListModel= new DefaultListModel<>();
+    private static String searchResult;
+
+
+    public static String getCurrentSearch() {
+        return currentSearch;
+    }
+
+    public static void setCurrentSearch(String currentSearch) {
+        Client.currentSearch = currentSearch;
+    }
+
+    public static String getSearchResult() {
+        return searchResult;
+    }
+
+    public static void setSearchResult(String searchResult) {
+        searchResult = searchResult;
+    }
+
+    public static String getBootrapIp() {
+        return bootrapIp;
+    }
+
+    public static void setBootrapIp(String bootrapIp) {
+        Client.bootrapIp = bootrapIp;
+    }
 
     public static int getK() {
         return k;
@@ -121,13 +147,6 @@ public class Client {
         Client.timestamp = timestamp;
     }
 
-    public static DatagramSocket getDatagramSocket() {
-        return datagramSocket;
-    }
-
-    public static void setDatagramSocket(DatagramSocket datagramSocket) {
-        Client.datagramSocket = datagramSocket;
-    }
 
     public static void displayRoutingTable() {
         if (myNodeList.isEmpty() && bucketTable.isEmpty()) {
@@ -147,19 +166,25 @@ public class Client {
                 System.out.println("Bucket " + key + " : " + node.getIp() + ":" + node.getPort());
             }
         }
+        System.out.println("file dictonary");
+        Iterator<String> iterator = fileDictionary.keySet().iterator();
+        while (iterator.hasNext()){
+            String next = iterator.next();
+            System.out.println( next+"  "+fileDictionary.get(next));
+        }
+
+
 
 
     }
 
-    public static void storeNode(String ip, String port) throws IOException {
+    public static void storeNode(String ip, String port) {
         Node newNode = new Node(ip, Integer.parseInt(port));
         int bucketId = Math.abs((ip + ":" + port).hashCode()) % k;
         bucketTable.put(bucketId, newNode);
         if (bucketId == Client.myBucketId) {
-
             findMyNodeListFromNode(newNode);
         }
-        displayRoutingTable();
     }
 
     public static void findMyNodeListFromNode(Node node) {
@@ -167,9 +192,14 @@ public class Client {
         for (int i = 0; i < Client.myFileList.size(); i++) {
             fileList += myFileList.get(i) + ":";
         }
+
         //FNL: Find Node List
-        String message = "FNL" + " " + Client.ip + ":" + Integer.toString(Client.port) + fileList;
+        //FNL: Find Node List
+
+        String message = "FNL" + " " + ip + ":" + Integer.toString(port);
         message = String.format("%04d", message.length() + 5) + " " + message;
+        unicast(message, node);
+
 
 //        Map<String, String> neighbour = new HashMap<String,String>();
 
@@ -184,8 +214,10 @@ public class Client {
     }
 
     public static void findNodeFromBucket(int bucketId) {
-        //FBM: Find Bucket Member 0011 FBM 01
+//        System.out.println("FBM: Find Bucket Member 0011 FBM 01");
+
         String message = "FBM " + bucketId + " " + Client.ip + ":" + Integer.toString(Client.port);
+//        System.out.println("message  : "+message);
         message = String.format("%04d", message.length() + 5) + " " + message;
 
         // request from available my nodes
@@ -205,99 +237,57 @@ public class Client {
                 continue;
             }
             byte[] buffer = message.getBytes();
-            String uri="http://"+node.getIp()+":"+node.getPort()+"/Request";
+            String uri="http://"+node.getIp()+":"+node.getPort()+"/";
             RestTemplate restTemplate = new RestTemplate();
             Map<String,String> sendMessage=new HashMap<>();
             sendMessage.put("message", message);
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+//            headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
             HttpEntity<Map> entity = new HttpEntity<Map>(sendMessage,headers);
-            String reply= restTemplate.postForObject(uri, entity, String.class);
-            Client.handleMessage(reply);
-
+            restTemplate.put(uri, entity);
         }
     }
 
-    public static void handleMessage(String message)  {
-            String[] messagePart = message.split(" ");
-            String[] sentNode;
-            switch (messagePart[1]) {
-                case "REGOK":
-                    //handle  response from bootstrap
-                    System.out.println(message);
-//                    handleRegisterResponse(message);
-                    break;
-                case "UNROK": // handle unregister response
-                    break;
-                case "JOINOK": // join response message
-                    break;
-                case "LEAVEOK": // leave response message
-                    handleLeaveOk(message);
-                    break;
-                case "LEAVE": // leave response message
-                    handleLeave(message);
-                    break;
-                case "SER":
-                    searchFiles(message);
-                    break;
-                case "SEROK": // search response message
-                    System.out.println(message);
-                    handleSearchFilesResponse(message);
-                    break;
-                case "HEARTBEATOK": //haddle hearbeat ok
-                    System.out.println(message);
-                    handleHeartBeatResponse(message);
-                    break;
-                case "HEARTBEAT":
-                    break;
-                //this.client.
-                case "FBM": //multicast message to find a node from a bucket
-                    System.out.println(message);
-                    sentNode = messagePart[3].split("\\:");
-                    findNodeFromBucketReply(Integer.parseInt(messagePart[2]), new Node(sentNode[0], Integer.valueOf(sentNode[1])));
-                    break;
-                case "FBMOK": //reply to FBM
-                    receiveReplyFindNodeFromBucket(message);
-                    break;
-                case "FNL": // unicast message to find myNodeList from node
-                    System.out.println(message);
-                    sentNode = messagePart[2].split(":");
-                    findMyNodeListFromNodeReply(new Node(sentNode[0], Integer.valueOf(sentNode[1])));
-                    break;
-                case "FNLOK": //reply to FNL
-                    receiveReplyfindMyNodeListFromNode(message);
-                    break;
-                case "CWN":
-                    HandleConnectWithNodes(message);
-                    break;
-            }
+
+
+    public static void unReg() {
+
+        String message = "UNREG " + getIp() + " " + getPort() + " " + getUserName();
+        message = String.format("%04d", message.length() + 5) + " " + message;
+        DatagramSocket receiveSock = null;
+
+        try {
+            receiveSock = new DatagramSocket(Client.getPort() - 1);
+            receiveSock.setSoTimeout(10000);
+            byte[] buffer = new byte[65536];
+            DatagramPacket incoming = new DatagramPacket(buffer, buffer.length);
+            DatagramPacket datagramPacket = new DatagramPacket(message.getBytes(), message.getBytes().length, InetAddress.getByName(Client.getIp()), 55555);
+            receiveSock.send(datagramPacket);
+            receiveSock.receive(incoming);
+            String receivedMessage = new String(incoming.getData(), 0, incoming.getLength());
+            receiveSock.close();
+            handleLeaveOk(receivedMessage);
+
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (SocketException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
-
+    }
+        // handle unreg ok from bootrap server
     public static void handleLeaveOk(String message) {
         System.out.println("Leave Ok Received");
         int messageType = Integer.parseInt(message.split(" ")[2]);
         if (messageType == 0) {
-            String sendMeessage = "LEAVE " + Client.getIp() + " " + Client.getPort();
+            String sendMeessage = "LEAVE " + getIp() + " " + getPort();
             message = String.format("%04d", sendMeessage.length() + 5) + " " + sendMeessage;
             multicast(sendMeessage, myNodeList);
-
             System.exit(0);
         } else if (messageType == 9999) {
 //            System.out.println("error while adding new node to routing table");
         }
-    }
-
-    public static void unicast(String message, Node node) {
-        String uri="http://"+node.getIp()+":"+node.getPort()+"/request";
-        RestTemplate restTemplate = new RestTemplate();
-        Map<String,String> sendMessage=new HashMap<>();
-        sendMessage.put("message", message);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
-        HttpEntity<Map> entity = new HttpEntity<Map>(sendMessage,headers);
-        String reply= restTemplate.postForObject(uri, entity, String.class);
-        Client.handleMessage(reply);
     }
 
     public static void handleLeave(String message) {
@@ -334,6 +324,17 @@ public class Client {
                 findNodeFromBucket(key);
             }
         }
+    }
+
+    public static void unicast(String message, Node node) {
+        String uri = "http://" + node.getIp() + ":" + node.getPort() + "/";
+        RestTemplate restTemplate = new RestTemplate();
+        Map<String,String> sendMessage=new HashMap<>();
+        sendMessage.put("message", message);
+        HttpHeaders headers = new HttpHeaders();
+        HttpEntity<Map> entity = new HttpEntity<Map>(sendMessage,headers);
+        restTemplate.put(uri, entity);
+
     }
 
     public static void findMyNodeListFromNodeReply(Node fromNode){
@@ -450,35 +451,12 @@ public class Client {
     }
 
 
-    public static void initializeSearch(String msg) throws IOException {
-        //SEARCH_FILES file_name
-        String file_name = msg.split(" ")[1];
-        String result_string = "";
-
-        //length SEROK no_files IP port hops filename1 filename2 ... ...
-//        ArrayList<String> results = new ArrayList<String>();
-//        Pattern p = Pattern.compile(".*\\\\b" + file_name + "\\\\b.*");
-//        Set<String> keys = fileDictionary.keySet();
-//        Iterator<String> iterator = keys.iterator();
-//
-//        while (iterator.hasNext()) {
-//            String candidate = iterator.next();
-//            Matcher m = p.matcher(candidate);
-//            if (m.matches()) {
-//                results.add(candidate);
-//                result_string.concat(candidate + " ");
-//            }
-//        }
-//        System.out.println(result_string);
-        String net_message = "SER " + Client.getIp() + " " + Client.getPort() + " " + msg.split(" ")[1] + " 0";
-        net_message = String.format("%04d", net_message.length() + 5) + " " + net_message;
-        searchFiles(net_message);
-    }
 
     public static void searchFiles(String message) {
         //length SER IP port file_name hops
         String[] split = message.split(" ");
         String file_name = split[4];
+        System.out.println("searching file name: " + file_name);
         String result_string = "";
         String source_ip = split[2];
         int source_port = Integer.parseInt(split[3]);
@@ -487,10 +465,15 @@ public class Client {
         if (split.length == 6) {
             hop_count = Integer.valueOf(split[5]);
         }
+        if(hop_count > 10){
+            System.out.println("Max Hop count reached, stopping the search");
+            return;
+        }
 
         //length SEROK tofind no_files IP port hops filename1 filename2 ... ...
         ArrayList<String> results = new ArrayList<String>();
-        Pattern p = Pattern.compile("[a-zA-Z\\s]*" + file_name + "[a-zA-Z\\s]*",Pattern.CASE_INSENSITIVE);
+        String real_file_name= file_name.replace('_', ' ');
+        Pattern p = Pattern.compile("[a-zA-Z0-9\\s]*" + real_file_name + "[a-zA-Z0-9\\s]*",Pattern.CASE_INSENSITIVE);
 
         Set<String> keys = new HashSet<>(myFileList);
         Iterator<String> iterator = keys.iterator();
@@ -511,7 +494,7 @@ public class Client {
         if (results.size() > 0) {
             System.out.println("in if");
 
-            String ret_message = "SEROK " + file_name + " " + results.size() + " " + Client.getIp() + " " + Client.getPort() + " " + (hop_count++) + " " + result_string;
+            String ret_message = "SEROK " + file_name + " " + results.size() + " " + ip + " " + port + " " + (hop_count++) + " " + result_string;
             ret_message = String.format("%04d", ret_message.length() + 5) + " " + ret_message;
 //            System.out.println(ret_message);
             unicast(ret_message, new Node(source_ip, source_port));
@@ -534,6 +517,7 @@ public class Client {
                 System.out.println("a");
 
                 String candidate = iterator.next();
+                System.out.println("Candidate: " + candidate);
                 Matcher m = p.matcher(candidate);
                 if (m.matches()) {
                     System.out.println("b");
@@ -542,17 +526,22 @@ public class Client {
                         nodelist.add(new Node(node.split(":")[0], Integer.parseInt(node.split(":")[1])));
                     }
                     for (Node node : nodelist) {
-                        System.out.println(node.getIp()+" - "+node.getPort());
+                        System.out.println(node.getIp()+":"+node.getPort());
 
                     }
 
                     for (int i = 0; i < nodelist.size(); i++) {
-                        if(nodelist.get(i).getIp()==ip && nodelist.get(i).getPort()==port){
+                        if(nodelist.get(i).getIp().equals(ip) && nodelist.get(i).getPort()==port){
                             nodelist.remove(i);
                         }
                     }
                     //need to send search ok. not multicast
-                    multicast(message, nodelist);
+
+                    //message to spread
+                    String net_message = "SER " + source_ip + " " + source_port + " " + file_name + " "+(++hop_count);
+                    net_message = String.format("%04d", net_message.length() + 5) + " " + net_message;
+
+                    multicast(net_message, nodelist);
                     found = true;
                 }
             }
@@ -564,34 +553,42 @@ public class Client {
                 Iterator<Node> setIterator = values.iterator();
                 while (setIterator.hasNext()){
                     Node next = setIterator.next();
-                    if (next.getIp()!=Client.ip || next.getPort()!=Client.port) {
+                    if (!(next.getIp().equals(ip) && next.getPort()== port)) {
+
+//                        System.out.println("Adding NODE ######### "+ port + " " + next.getPort());
                         temValues.add(next);
                     }
                 }
-                values.remove(new Node(Client.ip,Client.port));
-                multicast(message, temValues);
+//                values.remove(new Node(this.ip,this.port));
+                //message to spread
+                String net_message = "SER " + source_ip + " " + source_port + " " + file_name + " "+(++hop_count);
+                net_message = String.format("%04d", net_message.length() + 5) + " " + net_message;
+                multicast(net_message, temValues);
             }
         }
     }
 
-    public static synchronized void updateRountingTable() throws IOException {
+
+    public static  void updateRountingTable() throws IOException {
         ArrayList<Node> temNodeList = new ArrayList<>();
-//        System.out.println("start");
         for (Node node : myNodeList) {
-            if (new Timestamp(System.currentTimeMillis()).getTime() - node.getTimeStamp() < 10000) {
+
+            System.out.println(new Timestamp(System.currentTimeMillis()).getTime() - node.getTimeStamp());
+
+            if ((node.getIp().equals(ip)&& node.getPort()==port)||new Timestamp(System.currentTimeMillis()).getTime() - node.getTimeStamp() < 10000) {
                 temNodeList.add(node);
             } else {
-//                System.out.println("remove one"+ node.getIp()+" "+node.getPort());
+                System.out.println("remove one"+ node.getIp()+" "+node.getPort());
                 for (String file : fileDictionary.keySet()) {
-//                    System.out.println("change file dictonary");
+                    System.out.println("change file dictonary");
                     ArrayList<String> temFileNodeList = new ArrayList<String>();
                     for (String username : fileDictionary.get(file)) {
                         String[] split = username.split(":");
                         String ip = split[0];
                         int port = Integer.parseInt(split[1]);
-                        if (ip != node.getIp() && port != node.getPort()) {
+                        if (!ip.equals(node.getIp()) || port != node.getPort()) {
                             temFileNodeList.add(username);
-//                            System.out.println("removed files"+username);
+                            System.out.println("removed files"+username);
                         }
                     }
                     fileDictionary.replace(file, temFileNodeList);
@@ -599,38 +596,23 @@ public class Client {
 
             }
         }
-
-//        System.out.println("myNodeList " + myNodeList.size());
-//        System.out.println("myTemList " + temNodeList.size());
         myNodeList = temNodeList;
-        Iterator<Integer> it = bucketTable.keySet().iterator();
-        while (it.hasNext())
-        {
-            Integer next = it.next();
-            Node node = bucketTable.get(next);
-            if (new Timestamp(System.currentTimeMillis()).getTime() - node.getTimeStamp() > 10000) {
-//            System.out.println("time to response in bucket table " + (timestamp.getTime() - neighbour.getTimeStamp()));
-//            System.out.println("before remove" + bucketTable.keySet());
-                it.remove();
-//            System.out.println("after remove" + bucketTable.keySet());
-                findNodeFromBucket(next);
+
+        Iterator<Map.Entry<Integer, Node>> iterator = bucketTable.entrySet().iterator();
+        while(iterator.hasNext()){
+            Map.Entry<Integer, Node> next = iterator.next();
+            Node neighbour = next.getValue();
+            if((neighbour.getIp().equals(ip)&& neighbour.getPort()==port)){
+                continue;
+
+            }
+            if (new Timestamp(System.currentTimeMillis()).getTime() - neighbour.getTimeStamp() > 10000) {
+                iterator.remove();
+                findNodeFromBucket(next.getKey());
             }
 
         }
-//        for (int key : bucketTable.keySet()) {
-//            Node neighbour = bucketTable.get(key);
-////            System.out.println("time now" + new Timestamp(System.currentTimeMillis()).getTime());
-////            System.out.println("neighour time :" + neighbour.getTimeStamp());
-////            System.out.println("time to response in bucket table " + (new Timestamp(System.currentTimeMillis()).getTime() - neighbour.getTimeStamp()));
-//            if (new Timestamp(System.currentTimeMillis()).getTime() - neighbour.getTimeStamp() > 10000) {
-////            System.out.println("time to response in bucket table " + (timestamp.getTime() - neighbour.getTimeStamp()));
-////            System.out.println("before remove" + bucketTable.keySet());
-//                bucketTable.remove(key);
-////            System.out.println("after remove" + bucketTable.keySet());
-//                findNodeFromBucket(key);
-//            }
-//
-//        }
+
         // if my bucket table does not have connect ti some bucket we need to update that
         Set<Integer> keySet = bucketTable.keySet();
         for (int i = 0; i < k; i++) {
@@ -639,7 +621,6 @@ public class Client {
             }
         }
     }
-
 
     private static void connectWithNodes()  {
         // make fileDictionary string
@@ -733,8 +714,7 @@ public class Client {
             displayRoutingTable();
 
     }
-
-    public static void handleHeartBeatResponse(String message) {
+    public static void  handleHeartBeatResponse(String message) {
         //length HEARTBEATOK IP_address port_no
         boolean is_Change = false;
         ArrayList<Node> temNodeList = new ArrayList<Node>();
@@ -759,21 +739,21 @@ public class Client {
                 }
             }
         }
+
     }
 
     public static void sendHeartBeatReply(String message) throws IOException {
-        String newMessage = "HEARTBEATOK " + ip + " " +port;
+        String newMessage = "HEARTBEATOK " + getIp() + " " + getPort();
         newMessage = String.format("%04d", newMessage.length() + 5) + " " + newMessage;
         String[] splitMessage = message.split(" ");
         String userName= splitMessage[2]+":"+splitMessage[3];
-        int bucketId = userName.hashCode()%k;
+        int bucketId = Math.abs(userName.hashCode()%k);
         Node node = new Node(splitMessage[2], Integer.parseInt(splitMessage[3]));
 
         boolean containsKey = bucketTable.containsKey(bucketId);
         if(containsKey==false){
             bucketTable.put(bucketId, node);
         }
-
         unicast(newMessage, node);
     }
 
@@ -784,13 +764,12 @@ public class Client {
         }
         Node bucket_node = new Node(split_msg[3], Integer.valueOf(split_msg[4]));
         bucketTable.put(Integer.valueOf(split_msg[2]), bucket_node);
+        System.out.println("update bucket table");
         // Node is still initializing and the returned node is a node from my bucket
         if (split_msg[2].equals(Integer.toString(myBucketId))) {
             // request myNodeList from that node
             findMyNodeListFromNode(bucket_node);
         }
-
-        displayRoutingTable();
     }
 
 
@@ -815,10 +794,12 @@ public class Client {
             String[] split1 = fileSet.split(",");
 
             for (String string : split1) {
-                searchFilesResultListModel.addElement(string + " - " + ip + ":" + port+" ("+hops+")");
+                searchResult+=string + " - " + ip + ":" + port+" "+hops+"\n";
             }
         }
     }
+
+
 
     public static void findNodeFromBucketReply(int bucketId, Node fromNode) {
         //FBMOK: Find Bucket Member OK
@@ -874,4 +855,76 @@ public class Client {
 //    }
 //
 //
+
+    public static void handleRegisterResponse(String receivedMessage){
+
+        HashMap<String,String>result=new HashMap<>();
+        String[] messagePart = receivedMessage.split(" ");
+        String command=messagePart[1];
+        if(command.equals("REGOK")) {
+            switch (messagePart[2]) {
+                case "0":
+                    result.put("success", "true");
+                    result.put("result", "Node Successfully registered");
+                    System.out.println("You are the first node, registered successfully with BS!");
+                    setStatus("1");
+                    break;
+                case "1":
+                    result.put("success", "true");
+                    result.put("result", "Node Successfully registered case1");
+                    storeNode(messagePart[3], messagePart[4]);
+                    setStatus("1");
+                    break;
+                case "2":
+                    result.put("success", "true");
+                    result.put("result", "Node Successfully registered case2");
+                    storeNode(messagePart[3], messagePart[4]);
+                    storeNode(messagePart[5], messagePart[6]);
+
+                    // complete bucketTable (including my own bucket if it's empty)
+
+                    for (int i = 0; i < getK(); i++) {
+                        if (!getBucketTable().containsKey(i)) {
+                            findNodeFromBucket(i);
+                        }
+                    }
+                    // time out to complete receiving replies for findNodeFromBucket
+                    try {
+                        Thread.sleep(8000);  // Tune this
+
+                    } catch (InterruptedException ex) {
+                        try {
+                            Logger.getLogger(Class.forName(Client.class.getName())).log(Level.SEVERE, null, ex);
+                        } catch (ClassNotFoundException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    break;
+                case "9999":
+                    result.put("success", "false");
+                    result.put("result", "There is some error in the command");
+                    System.exit(0);
+                    break;
+                case "9998":
+                    System.out.println("failed, already registered! attempting unregister first");
+                    result.put("success", "false");
+                    result.put("result", "Already registered you, unregister first");
+                    break;
+                case "9997":
+                    result.put("success", "false");
+                    result.put("result", "Registered to another user, try a different IP and port");
+                    System.exit(0);
+                    // TODO
+                    break;
+                case "9996":
+                    result.put("success", "false");
+                    result.put("result", "Can’t register, BS full");
+                    System.exit(0);
+                default:
+                    break;
+            }
+
+        }
+    }
+
 }
