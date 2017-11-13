@@ -59,7 +59,7 @@ public class FastsparkApplication {
 		Client.setPort(port);
 		Client.setIp(ip);
 		Client.setBootrapIp(ip);
-
+		Client.setUserName(ip+":"+port);
 		Map<String, Object> map = new HashMap<>();
 		map.put("server.port", input);
 		application.setDefaultProperties(map);

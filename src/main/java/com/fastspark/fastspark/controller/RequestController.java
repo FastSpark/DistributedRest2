@@ -26,6 +26,7 @@ public class RequestController {
 
     @RequestMapping(value = "/",method = RequestMethod.GET)
     public String loadHomePageStart(Model model) {
+        System.out.println("request controller " +Client.getBucketTable().keySet());
         model.addAttribute("Client",new ClientForm());
         model.addAttribute("SearchResult",new SearchResult());
         return "home";

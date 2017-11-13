@@ -1,0 +1,117 @@
+#
+# There is insufficient memory for the Java Runtime Environment to continue.
+# Native memory allocation (mmap) failed to map 154140672 bytes for committing reserved memory.
+# Possible reasons:
+#   The system is out of physical RAM or swap space
+#   In 32 bit mode, the process size limit was hit
+# Possible solutions:
+#   Reduce memory load on the system
+#   Increase physical memory or swap space
+#   Check if swap backing store is full
+#   Use 64 bit Java on a 64 bit OS
+#   Decrease Java heap size (-Xmx/-Xms)
+#   Decrease number of Java threads
+#   Decrease Java thread stack sizes (-Xss)
+#   Set larger code cache with -XX:ReservedCodeCacheSize=
+# This output file may be truncated or incomplete.
+#
+#  Out of Memory Error (os_linux.cpp:2627), pid=15480, tid=0x00007fc2fa9e9700
+#
+# JRE version: Java(TM) SE Runtime Environment (8.0_121-b13) (build 1.8.0_121-b13)
+# Java VM: Java HotSpot(TM) 64-Bit Server VM (25.121-b13 mixed mode linux-amd64 compressed oops)
+# Failed to write core dump. Core dumps have been disabled. To enable core dumping, try "ulimit -c unlimited" before starting Java again
+#
+
+---------------  T H R E A D  ---------------
+
+Current thread (0x00007fc3301ca000):  VMThread [stack: 0x00007fc2fa8e9000,0x00007fc2fa9ea000] [id=15504]
+
+Stack: [0x00007fc2fa8e9000,0x00007fc2fa9ea000],  sp=0x00007fc2fa9e8320,  free space=1020k
+Native frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)
+V  [libjvm.so+0xac703a]  VMError::report_and_die()+0x2ba
+V  [libjvm.so+0x4fc7eb]  report_vm_out_of_memory(char const*, int, unsigned long, VMErrorType, char const*)+0x8b
+V  [libjvm.so+0x923c43]  os::Linux::commit_memory_impl(char*, unsigned long, bool)+0x103
+V  [libjvm.so+0x924199]  os::pd_commit_memory(char*, unsigned long, unsigned long, bool)+0x29
+V  [libjvm.so+0x91e4aa]  os::commit_memory(char*, unsigned long, unsigned long, bool)+0x2a
+V  [libjvm.so+0x992f03]  PSVirtualSpace::expand_by(unsigned long)+0x53
+V  [libjvm.so+0x994308]  PSYoungGen::resize_generation(unsigned long, unsigned long)+0xf8
+V  [libjvm.so+0x993462]  PSYoungGen::resize(unsigned long, unsigned long)+0x22
+V  [libjvm.so+0x99073b]  PSScavenge::invoke_no_policy()+0xf3b
+V  [libjvm.so+0x990ec1]  PSScavenge::invoke()+0x41
+V  [libjvm.so+0x947c10]  ParallelScavengeHeap::failed_mem_allocate(unsigned long)+0x70
+V  [libjvm.so+0xac8a57]  VM_ParallelGCFailedAllocation::doit()+0x97
+V  [libjvm.so+0xad0535]  VM_Operation::evaluate()+0x55
+V  [libjvm.so+0xace90a]  VMThread::evaluate_operation(VM_Operation*)+0xba
+V  [libjvm.so+0xacec8e]  VMThread::loop()+0x1ce
+V  [libjvm.so+0xacf100]  VMThread::run()+0x70
+V  [libjvm.so+0x926268]  java_start(Thread*)+0x108
+
+VM_Operation (0x00007fc2c3af58d0): ParallelGCFailedAllocation, mode: safepoint, requested by thread 0x00007fc330994800
+
+
+---------------  P R O C E S S  ---------------
+
+Java Threads: ( => current thread )
+  0x00007fc33000d000 JavaThread "DestroyJavaVM" [_thread_blocked, id=15483, stack(0x00007fc3384ab000,0x00007fc3385ac000)]
+  0x00007fc330a18000 JavaThread "Thread-4" [_thread_blocked, id=15554, stack(0x00007fc2c29ee000,0x00007fc2c2aef000)]
+  0x00007fc330a17800 JavaThread "Keep-Alive-Timer" daemon [_thread_blocked, id=15553, stack(0x00007fc2c2aef000,0x00007fc2c2bf0000)]
+  0x00007fc3309db000 JavaThread "http-nio-6000-AsyncTimeout" daemon [_thread_blocked, id=15552, stack(0x00007fc2c2ff0000,0x00007fc2c30f1000)]
+  0x00007fc3309d9800 JavaThread "http-nio-6000-Acceptor-0" daemon [_thread_in_native, id=15551, stack(0x00007fc2c30f1000,0x00007fc2c31f2000)]
+  0x00007fc3309d6800 JavaThread "http-nio-6000-ClientPoller-1" daemon [_thread_blocked, id=15550, stack(0x00007fc2c31f2000,0x00007fc2c32f3000)]
+  0x00007fc3309bc800 JavaThread "http-nio-6000-ClientPoller-0" daemon [_thread_blocked, id=15549, stack(0x00007fc2c32f3000,0x00007fc2c33f4000)]
+  0x00007fc3309a0800 JavaThread "http-nio-6000-exec-10" daemon [_thread_blocked, id=15548, stack(0x00007fc2c33f4000,0x00007fc2c34f5000)]
+  0x00007fc33099e800 JavaThread "http-nio-6000-exec-9" daemon [_thread_blocked, id=15547, stack(0x00007fc2c34f5000,0x00007fc2c35f6000)]
+  0x00007fc33099c800 JavaThread "http-nio-6000-exec-8" daemon [_thread_blocked, id=15546, stack(0x00007fc2c35f6000,0x00007fc2c36f7000)]
+  0x00007fc33099a800 JavaThread "http-nio-6000-exec-7" daemon [_thread_blocked, id=15545, stack(0x00007fc2c36f7000,0x00007fc2c37f8000)]
+  0x00007fc330998800 JavaThread "http-nio-6000-exec-6" daemon [_thread_blocked, id=15544, stack(0x00007fc2c37f8000,0x00007fc2c38f9000)]
+  0x00007fc330996800 JavaThread "http-nio-6000-exec-5" daemon [_thread_blocked, id=15543, stack(0x00007fc2c38f9000,0x00007fc2c39fa000)]
+  0x00007fc330994800 JavaThread "http-nio-6000-exec-4" daemon [_thread_blocked, id=15542, stack(0x00007fc2c39fa000,0x00007fc2c3afb000)]
+  0x00007fc330992800 JavaThread "http-nio-6000-exec-3" daemon [_thread_blocked, id=15541, stack(0x00007fc2c3afb000,0x00007fc2c3bfc000)]
+  0x00007fc330990800 JavaThread "http-nio-6000-exec-2" daemon [_thread_blocked, id=15540, stack(0x00007fc2c3bfc000,0x00007fc2c3cfd000)]
+  0x00007fc33098f000 JavaThread "http-nio-6000-exec-1" daemon [_thread_blocked, id=15539, stack(0x00007fc2c3cfd000,0x00007fc2c3dfe000)]
+  0x00007fc330973000 JavaThread "NioBlockingSelector.BlockPoller-1" daemon [_thread_blocked, id=15538, stack(0x00007fc2c3dfe000,0x00007fc2c3eff000)]
+  0x00007fc3308e7000 JavaThread "container-0" [_thread_blocked, id=15537, stack(0x00007fc2c3eff000,0x00007fc2c4000000)]
+  0x00007fc3308e4800 JavaThread "ContainerBackgroundProcessor[StandardEngine[Tomcat]]" daemon [_thread_blocked, id=15536, stack(0x00007fc2f80a2000,0x00007fc2f81a3000)]
+  0x00007fc330414800 JavaThread "Service Thread" daemon [_thread_blocked, id=15523, stack(0x00007fc2f975e000,0x00007fc2f985f000)]
+  0x00007fc33040f000 JavaThread "C1 CompilerThread3" daemon [_thread_blocked, id=15522, stack(0x00007fc2f9d77000,0x00007fc2f9e78000)]
+  0x00007fc33040d000 JavaThread "C2 CompilerThread2" daemon [_thread_blocked, id=15521, stack(0x00007fc2f9e78000,0x00007fc2f9f79000)]
+  0x00007fc33040b000 JavaThread "C2 CompilerThread1" daemon [_thread_blocked, id=15520, stack(0x00007fc2f9f79000,0x00007fc2fa07a000)]
+  0x00007fc330409000 JavaThread "C2 CompilerThread0" daemon [_thread_blocked, id=15519, stack(0x00007fc2fa07a000,0x00007fc2fa17b000)]
+  0x00007fc3303f8800 JavaThread "Monitor Ctrl-Break" daemon [_thread_in_native, id=15518, stack(0x00007fc2fa17b000,0x00007fc2fa27c000)]
+  0x00007fc33020a000 JavaThread "Signal Dispatcher" daemon [_thread_blocked, id=15510, stack(0x00007fc2fa30d000,0x00007fc2fa40e000)]
+  0x00007fc3301d6800 JavaThread "Finalizer" daemon [_thread_blocked, id=15507, stack(0x00007fc2fa6e7000,0x00007fc2fa7e8000)]
+  0x00007fc3301d2000 JavaThread "Reference Handler" daemon [_thread_blocked, id=15505, stack(0x00007fc2fa7e8000,0x00007fc2fa8e9000)]
+
+Other Threads:
+=>0x00007fc3301ca000 VMThread [stack: 0x00007fc2fa8e9000,0x00007fc2fa9ea000] [id=15504]
+  0x00007fc330417000 WatcherThread [stack: 0x00007fc2f965d000,0x00007fc2f975e000] [id=15524]
+
+VM state:at safepoint (normal execution)
+
+VM Mutex/Monitor currently owned by a thread:  ([mutex/lock_event])
+[0x00007fc330009530] Threads_lock - owner thread: 0x00007fc3301ca000
+[0x00007fc330009a30] Heap_lock - owner thread: 0x00007fc330994800
+
+Heap:
+ PSYoungGen      total 302592K, used 352K [0x00000000d6f00000, 0x00000000ea380000, 0x0000000100000000)
+  eden space 289280K, 0% used [0x00000000d6f00000,0x00000000d6f00000,0x00000000e8980000)
+  from space 13312K, 2% used [0x00000000e8980000,0x00000000e89d8020,0x00000000e9680000)
+  to   space 6144K, 0% used [0x00000000e9d80000,0x00000000e9d80000,0x00000000ea380000)
+ ParOldGen       total 52224K, used 19643K [0x0000000084c00000, 0x0000000087f00000, 0x00000000d6f00000)
+  object space 52224K, 37% used [0x0000000084c00000,0x0000000085f2ed78,0x0000000087f00000)
+ Metaspace       used 28666K, capacity 28962K, committed 29312K, reserved 1075200K
+  class space    used 3536K, capacity 3624K, committed 3712K, reserved 1048576K
+
+Card table byte_map: [0x00007fc334c6a000,0x00007fc335045000] byte_map_base: 0x00007fc334844000
+
+Marking Bits: (ParMarkBitMap*) 0x00007fc337979c80
+ Begin Bits: [0x00007fc308260000, 0x00007fc30a130000)
+ End Bits:   [0x00007fc30a130000, 0x00007fc30c000000)
+
+Polling page: 0x00007fc3385ca000
+
+CodeCache: size=245760Kb used=9573Kb max_used=9573Kb free=236186Kb
+ bounds [0x00007fc321000000, 0x00007fc321960000, 0x00007fc330000000]
+ total_blobs=4978 nmethods=4556 adapters=335
+ compilation: enabled
+

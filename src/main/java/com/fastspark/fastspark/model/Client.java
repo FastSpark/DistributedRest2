@@ -3,6 +3,7 @@ package com.fastspark.fastspark.model;
 import com.sun.istack.internal.logging.Logger;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.swing.*;
@@ -10,6 +11,7 @@ import java.io.IOException;
 import java.net.*;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,7 +28,7 @@ public class Client {
     private static String ip;
     private static int port;
     private static String userName; //hash(ip+port)
-    private static Map<Integer, Node> bucketTable =new HashMap<>(); //bucket and the node I know from that bucket
+    private static Map<Integer, Node> bucketTable =new ConcurrentHashMap<>(); //bucket and the node I know from that bucket
     private static Map<String, ArrayList<String>> fileDictionary =new HashMap<>(); //filename: nodelist
     private static ArrayList<String> myFileList =new ArrayList<>(); //filenames with me
     private static ArrayList<Node> myNodeList =new ArrayList<>(); //nodes in my bucket
@@ -178,15 +180,16 @@ public class Client {
 
     }
 
-    public static void storeNode(String ip, String port) {
+   public static void storeNode(String ip, String port) {
         Node newNode = new Node(ip, Integer.parseInt(port));
         int bucketId = Math.abs((ip + ":" + port).hashCode()) % k;
         bucketTable.put(bucketId, newNode);
+       System.out.println(bucketTable.values()+" "+bucketTable.keySet());
+        System.out.println("store node in bucket");
         if (bucketId == Client.myBucketId) {
             findMyNodeListFromNode(newNode);
         }
     }
-
     public static void findMyNodeListFromNode(Node node) {
         String fileList = " ";
         for (int i = 0; i < Client.myFileList.size(); i++) {
@@ -244,7 +247,11 @@ public class Client {
             HttpHeaders headers = new HttpHeaders();
 //            headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
             HttpEntity<Map> entity = new HttpEntity<Map>(sendMessage,headers);
-            restTemplate.put(uri, entity);
+            try {
+                restTemplate.put(uri, entity);
+            }catch(ResourceAccessException e){
+                System.out.println("node not found");
+            }
         }
     }
 
@@ -266,6 +273,7 @@ public class Client {
             receiveSock.receive(incoming);
             String receivedMessage = new String(incoming.getData(), 0, incoming.getLength());
             receiveSock.close();
+            System.out.println("leave message"+receivedMessage);
             handleLeaveOk(receivedMessage);
 
         } catch (UnknownHostException e) {
@@ -283,7 +291,9 @@ public class Client {
         if (messageType == 0) {
             String sendMeessage = "LEAVE " + getIp() + " " + getPort();
             message = String.format("%04d", sendMeessage.length() + 5) + " " + sendMeessage;
+
             multicast(sendMeessage, myNodeList);
+
             System.exit(0);
         } else if (messageType == 9999) {
 //            System.out.println("error while adding new node to routing table");
@@ -315,11 +325,9 @@ public class Client {
                 }
             }
         }
-
-
         for (int key : bucketTable.keySet()) {
             Node neighbour = bucketTable.get(key);
-            if (neighbour.getIp() == ip && neighbour.getPort() == port) {
+            if (neighbour.getIp().equals(ip) && neighbour.getPort() == port) {
                 bucketTable.remove(key);
                 findNodeFromBucket(key);
             }
@@ -333,8 +341,11 @@ public class Client {
         sendMessage.put("message", message);
         HttpHeaders headers = new HttpHeaders();
         HttpEntity<Map> entity = new HttpEntity<Map>(sendMessage,headers);
-        restTemplate.put(uri, entity);
-
+        try {
+            restTemplate.put(uri, entity);
+        }catch(ResourceAccessException e){
+            System.out.println("node not found");
+        }
     }
 
     public static void findMyNodeListFromNodeReply(Node fromNode){
@@ -598,21 +609,18 @@ public class Client {
         }
         myNodeList = temNodeList;
 
-        Iterator<Map.Entry<Integer, Node>> iterator = bucketTable.entrySet().iterator();
-        while(iterator.hasNext()){
-            Map.Entry<Integer, Node> next = iterator.next();
-            Node neighbour = next.getValue();
+        for (int key : bucketTable.keySet()) {
+            Node neighbour = bucketTable.get(key);
             if((neighbour.getIp().equals(ip)&& neighbour.getPort()==port)){
                 continue;
 
             }
             if (new Timestamp(System.currentTimeMillis()).getTime() - neighbour.getTimeStamp() > 10000) {
-                iterator.remove();
-                findNodeFromBucket(next.getKey());
+                bucketTable.remove(key);
+                findNodeFromBucket(key);
             }
 
         }
-
         // if my bucket table does not have connect ti some bucket we need to update that
         Set<Integer> keySet = bucketTable.keySet();
         for (int i = 0; i < k; i++) {
@@ -620,6 +628,7 @@ public class Client {
                 findNodeFromBucket(i);
             }
         }
+
     }
 
     private static void connectWithNodes()  {
@@ -720,7 +729,9 @@ public class Client {
         ArrayList<Node> temNodeList = new ArrayList<Node>();
         String[] splitMessage = message.split(" ");
         String ip = splitMessage[2];
+
         int port = Integer.parseInt(splitMessage[3]);
+
         for (Node node : myNodeList) {
             if (node.getIp().equals(ip) && node.getPort() == port) {
                 node.setTimeStamp(new Timestamp(System.currentTimeMillis()).getTime());
@@ -731,10 +742,12 @@ public class Client {
         myNodeList = temNodeList;
 
         if (!is_Change) {
+            System.out.println("bucket is change"+bucketTable.keySet());
             for (int key : bucketTable.keySet()) {
                 Node node = bucketTable.get(key);
                 if (node.getIp().equals(ip) && node.getPort() == port) {
                     node.setTimeStamp(new Timestamp(System.currentTimeMillis()).getTime());
+                    System.out.println("update node"+node.getPort()+" "+new Timestamp(System.currentTimeMillis()).getTime());
                     bucketTable.replace(key, node);
                 }
             }
@@ -742,7 +755,7 @@ public class Client {
 
     }
 
-    public static void sendHeartBeatReply(String message) throws IOException {
+    public static void sendHeartBeatReply(String message){
         String newMessage = "HEARTBEATOK " + getIp() + " " + getPort();
         newMessage = String.format("%04d", newMessage.length() + 5) + " " + newMessage;
         String[] splitMessage = message.split(" ");
@@ -888,17 +901,8 @@ public class Client {
                             findNodeFromBucket(i);
                         }
                     }
+                    setStatus("1");
                     // time out to complete receiving replies for findNodeFromBucket
-                    try {
-                        Thread.sleep(8000);  // Tune this
-
-                    } catch (InterruptedException ex) {
-                        try {
-                            Logger.getLogger(Class.forName(Client.class.getName())).log(Level.SEVERE, null, ex);
-                        } catch (ClassNotFoundException e) {
-                            e.printStackTrace();
-                        }
-                    }
                     break;
                 case "9999":
                     result.put("success", "false");

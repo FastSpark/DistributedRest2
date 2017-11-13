@@ -99,7 +99,8 @@
                         <thead>
                             <tr>
                                 <th>bucketId</th>
-                                <th>Connected Neighbour</th>
+                                <th>Connected Neighbour Ip</th>
+                                <th>Connected Port</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -107,6 +108,7 @@
                                 <tr>
                                     <td>"${map.key}"</td>
                                     <td>"${map.value.ip}"</td>
+                                    <td>"${map.value.port}"</td>
                                 </tr>
                             </c:forEach>
                         </tbody>

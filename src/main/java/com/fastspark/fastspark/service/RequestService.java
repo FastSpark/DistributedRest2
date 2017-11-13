@@ -42,6 +42,7 @@ public class RequestService {
                 Client.handleHeartBeatResponse(message);
                 break;
             case "HEARTBEAT":
+                Client.sendHeartBeatReply(message);
                 break;
             case "FBM":
                 sentNode = messagePart[3].split("\\:");
