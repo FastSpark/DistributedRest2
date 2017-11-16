@@ -8,7 +8,7 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- Website CSS style -->
-    <link href="../../resources/css/bootstrap.css" rel='stylesheet' type='text/css' />
+    <link href="../../resources/css/bootstrap.css" rel='stylesheet' type='text/css'/>
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="../../resources/js/jquery-1.11.0.min.js"></script>
     <!-- Custom Theme files -->
@@ -21,139 +21,132 @@
 </head>
 
 <body>
+<nav class="navbar navbar-fixed-top navbar-inverse">
     <div class="container">
-
-            <div class="row" >
-
-                <div class="col-lg-6" >
-
-                    <div class="form-control" >
-                        <label class="control-label col-sm-6" for="bootrapIp">bootrapIp</label>
-                        <input class="col-sm-6" type="text" name="bootrapIp" id="bootrapIp" value="${Client.bootrapIp}"><br>
-                    </div>
-                    <div class="form-control">
-                        <label class="col-sm-6" for="ip">Node Ip</label>
-                        <input class="col-sm-6" type="text" name="ip" id="ip" value="${Client.ip}"><br>
-                    </div>
-                    <div class="form-control">
-                        <label class="col-sm-6" for="port">Node Port</label>
-                        <input class="col-sm-6" type="text"  name="port" id="port" value="${Client.port}"><br>
-                    </div>
-
-                    <div class="form-control">
-                        <label class="col-sm-6" for="bucketId">Bucket Id</label>
-                        <input class="col-sm-6" type="text" name="bucketId" id="bucketId" value="${Client.myBucketId}"><br>
-                    </div>
-
+        <div class="navbar-header">
+            <a class="navbar-brand" href="#">Distributed Net - Fastspark</a>
+            <form:form method="get" action="/leave">
+                <div class="form-group pull-right">
+                    <button class="btn btn-success" type="submit">Leave</button>
                 </div>
-
-                <div class="col-lg-6">
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>My File List</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-
-                            <c:forEach var="file" items="${Client.myFileList}">
-                                <tr>
-                                    <td>"${file}"</td>
-                                </tr>
-                            </c:forEach>
-
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="row">
-
-                <div class="col-lg-6">
-                    <h3>File Contain In My Bucket</h3>
-                    <table class="table table-bordered">
-                        <thead >
-                            <tr>
-                                <th>file</th>
-                                <th>Node List</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-
-                            <c:forEach var="map" items="${Client.fileDictionary}">
-                                <tr>
-                                    <td>"${map.key}"</td>
-                                    <td>"${map.value}"</td>
-                                </tr>
-
-                            </c:forEach>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="col-lg-6">
-
-                    <h2>My Bucket Table</h2>
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>bucketId</th>
-                                <th>Connected Neighbour Ip</th>
-                                <th>Connected Port</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <c:forEach var="map" items="${Client.bucketTable}">
-                                <tr>
-                                    <td>"${map.key}"</td>
-                                    <td>"${map.value.ip}"</td>
-                                    <td>"${map.value.port}"</td>
-                                </tr>
-                            </c:forEach>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-lg-6">
-                    <div class="row">
-                        <form:form method="post" action="/search" commandName="SearchResult">
-
-                            <div class="form-group">
-                                <label for="search" class="cols-sm-2 control-label">Search File </label>
-                                <div class="cols-sm-10">
-                                    <div class="input-group">
-                                        <span class="input-group-addon"><i class="fa fa-user fa" aria-hidden="true"></i></span>
-                                        <form:input path="searchFile" type="text" class="form-control" name="search" id="search"  placeholder="${Client.currentSearch}" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="form-group ">
-                                <form:button class="btn btn-success" type="submit">Search</form:button>
-                            </div>
-
-                        </form:form>
-                    </div>
-                    <div class="row">
-                        <div class="form-group">
-                            <label for="result">Result Of File Search</label>
-                            <textarea class="form-control" rows="5" id="result" >${Client.searchResult}"</textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-lg-6">
-                    <form:form method="get" action="/leave">
-                        <div class="form-group ">
-                            <button class="btn btn-success" type="submit">Leave</button>
-                        </div>
-                    </form:form>
-                </div>
-
-            </div>
+            </form:form>
         </div>
+    </div><!-- /.container -->
+</nav><!-- /.navbar -->
+
+<div class="container">
+
+    <div class="row row-offcanvas row-offcanvas-right">
+        <div class="col-lg-3 sidebar-offcanvas" id="sidebar">
+            <div class="list-group">
+                <a href="#" class="list-group-item active">Bootstrap IP: ${Client.bootrapIp}</a>
+                <a href="#" class="list-group-item active">Node IP: ${Client.ip}</a>
+                <a href="#" class="list-group-item active">Node Port: ${Client.port}</a>
+                <a href="#" class="list-group-item active">Bucket ID: ${Client.myBucketId}</a>
+            </div>
+        </div><!--/.sidebar-offcanvas-->
+
+        <div class="col-lg-9">
+            <table class="table table-bordered">
+                <thead>
+                <tr>
+                    <th>My File List</th>
+                </tr>
+                </thead>
+                <tbody>
+                <c:forEach var="file" items="${Client.myFileList}">
+                    <tr>
+                        <td>"${file}"</td>
+                    </tr>
+                </c:forEach>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-lg-6">
+            <h4>File Contain In My Bucket</h4>
+            <table class="table table-bordered">
+                <thead>
+                <tr>
+                    <th>file</th>
+                    <th>Node List</th>
+                </tr>
+                </thead>
+                <tbody>
+
+                <c:forEach var="map" items="${Client.fileDictionary}">
+                    <tr>
+                        <td>"${map.key}"</td>
+                        <td>"${map.value}"</td>
+                    </tr>
+
+                </c:forEach>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-lg-6">
+            <h4>My Bucket Table</h4>
+            <table class="table table-bordered">
+                <thead>
+                <tr>
+                    <th>bucketId</th>
+                    <th>Connected Neighbour Ip</th>
+                    <th>Connected Port</th>
+                </tr>
+                </thead>
+                <tbody>
+                <c:forEach var="map" items="${Client.bucketTable}">
+                    <tr>
+                        <td>"${map.key}"</td>
+                        <td>"${map.value.ip}"</td>
+                        <td>"${map.value.port}"</td>
+                    </tr>
+                </c:forEach>
+                </tbody>
+            </table>
+        </div>
+    </div><!--/.col-xs-12.col-sm-9-->
+
+    <div class="col-lg-6">
+        <form:form method="post" action="/search" commandName="SearchResult">
+
+            <div class="form-group">
+                <label for="search" class="cols-sm-2 control-label">Search File </label>
+                <div class="cols-sm-10">
+                    <div class="input-group">
+                        <form:input path="searchFile" type="text" class="form-control" name="search" id="search"
+                                    placeholder="${Client.currentSearch}"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group ">
+                <form:button class="btn btn-success" type="submit">Search</form:button>
+            </div>
+
+        </form:form>
+        <div class="form-group">
+            <label for="result">Result Of File Search</label>
+            <textarea class="form-control" rows="5" id="result">${Client.searchResult}"</textarea>
+        </div>
+    </div>
+</div><!--/row-->
+</div><!--/.container-->
+
+<hr>
+
+<footer>
+    <p style="margin-left: 50px">&copy; 2016 Company, Inc.</p>
+</footer>
 </body>
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script>window.jQuery || document.write('<script src="../../assets/js/vendor/jquery.min.js"><\/script>')</script>
+<script src="../../dist/js/bootstrap.min.js"></script>
+<!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+<script src="../../assets/js/ie10-viewport-bug-workaround.js"></script>
+<script src="offcanvas.js"></script>
 </html>
